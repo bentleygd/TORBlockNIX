@@ -1,6 +1,6 @@
 #!/usr/bin/python
 import stem.descriptor.remote
-from re import search, match
+from re import match
 
 
 # VARIABLE DECLARATION
