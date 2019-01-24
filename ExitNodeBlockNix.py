@@ -1,7 +1,7 @@
 #!/usr/bin/python
 import stem.descriptor.remote
 from re import match
-from subprocess import popen
+from subprocess import Popen
 
 
 # VARIABLE DECLARATION
@@ -26,4 +26,4 @@ tor_exit_list.sort()
 
 for ip_addr in set(tor_exit_list):
     if match(ip_pattern, ip_addr):
-        popen('/usr/bin/echo' + ip_addr)
+        Popen('/usr/bin/echo' + ip_addr)
