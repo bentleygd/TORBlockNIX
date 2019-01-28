@@ -5,7 +5,6 @@ from subprocess import Popen
 
 
 # VARIABLE DECLARATION
-dbl_path = '/var/www/html/DBL/TOR.txt'
 ip_pattern = '\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}'
 tor_exit_list = []
 block_list = []
