@@ -19,9 +19,7 @@ for desc in stem.descriptor.remote.get_server_descriptors():
 
 # Sort the list to make it neat, and for ease of comparison if that becomes
 # a desired feature later.  After we validate whethor not each entry is an
-# actual IP address, we write the IP addresses as a set to a file to remove
-# duplicates.  Note that write mode (as opposed to append) is being used,
-# which means that the file will be overwritten each time the script runs.
+# actual IP address, we will block the IP addresses using iptables.
 tor_exit_list.sort()
 
 for ip_addr in set(tor_exit_list):
