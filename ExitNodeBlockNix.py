@@ -6,12 +6,11 @@ from sys import exc_info
 from time import sleep
 
 
-# This function sets up iptables by creating a specific chain to block 
+# This function sets up iptables by creating a specific chain to block
 # TOR exit nodes.  It also modifies the INPUT chain to jump to this chain
 # first and sets the last rule of this chain to jump back to INPUT.
 
 def TORChainSetup():
-# Create the iptables chain for blocking TOR exit relays.
     try:
         check_output('/sbin/iptables -N TOR-BLOCK', shell=True, sterr=STDOUT)
     except CalledProcessError as CreateChain:
@@ -25,9 +24,9 @@ def TORChainSetup():
             print 'The error given by iptables is:', CreateChain.output
             print 'Error:', exc_info[1]
 
-# Obtain a list of iptables rules for the TOR-BLOCK chain.      
+# Obtain a list of iptables rules for the TOR-BLOCK chain.
     list_block_chain = split('\n', check_output('/sbin/iptables -L TOR-BLOCK',
-                              shell=True, stderr=STDOUT))
+                             shell=True, stderr=STDOUT))
 
 # Check to see if there is a return rule, and if there isn't create one.
     for entry in list_block_chain:
@@ -37,7 +36,7 @@ def TORChainSetup():
             Popen('/sbin/iptables -A -j RETURN', shell=True)
 
 # Create a count of iptables rules that are not the return rule in the
-# TOR-BLOCK chain.  Once we have this we will iterate a process toe delete 
+# TOR-BLOCK chain.  Once we have this we will iterate a process toe delete
 # all the rules that have a range between 1 and n, where n equals the number
 # of iptables rules that are not a return rule.
     block_chain_num = 0
