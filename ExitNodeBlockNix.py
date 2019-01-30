@@ -60,7 +60,7 @@ def TORChainSetup():
         if search('^RETURN', entry):
             pass
         else:
-            block_chain_num = block_chain num + 1
+            block_chain_num = block_chain_num + 1
     del_num = block_chain_num + 1
     del_counter = 0
     for rule_num in range(1, del_num):
