@@ -1,8 +1,10 @@
 #!/usr/bin/python
+# Created by Gabriel Bentley
+# Licensed under GPLv3
 import stem.descriptor.remote
 from re import match, search, split
 from subprocess import check_output, CalledProcessError, STDOUT, Popen
-from sys import exc_info
+from sys import exc_info, exit
 from time import sleep
 
 
@@ -11,6 +13,7 @@ from time import sleep
 # first and sets the last rule of this chain to jump back to INPUT.
 
 def TORChainSetup():
+    """Sets up iptables for blocking TOR exit nodes."""
     try:
         check_output('/sbin/iptables -N TOR-BLOCK', shell=True, sterr=STDOUT)
     except CalledProcessError as CreateChain:
@@ -19,36 +22,49 @@ def TORChainSetup():
         if search('Permssion Denied', CreateChain.output):
             print 'Error:', CreateChain.output
             print 'Try executing the script as root.'
-            sys.exit(1)
+            exit(1)
         else:
+            print 'Unrecognized error!'
             print 'The error given by iptables is:', CreateChain.output
             print 'Error:', exc_info[1]
+            exit(1)
 
-# Obtain a list of iptables rules for the TOR-BLOCK chain.
+# Obtain a list of iptables rules that are the current TOR-BLOCK chain.
     list_block_chain = split('\n', check_output('/sbin/iptables -L TOR-BLOCK',
-                             shell=True, stderr=STDOUT))
+                             shell=True))
 
 # Check to see if there is a return rule, and if there isn't create one.
     for entry in list_block_chain:
         if search('^RETURN', entry):
-            pass
+            break
         else:
             Popen('/sbin/iptables -A -j RETURN', shell=True)
 
-# Create a count of iptables rules that are not the return rule in the
-# TOR-BLOCK chain.  Once we have this we will iterate a process toe delete
-# all the rules that have a range between 1 and n, where n equals the number
-# of iptables rules that are not a return rule.
+# Set up the INPUT chain to jump to TOR-BLOCK.
+    input_chain = split('\n', check_output('/sbin/iptables -L INPUT',
+                        shell=True))
+    for entry in input_chain:
+        if search('^TOR-BLOCK', entry):
+            break
+        else:
+            Popen('/sbin/iptables -I INPUT 1 -j TOR-BLOCK', shell=True)
+
+# Create a count of iptables rules that are not the RETURN rule in the
+# TOR-BLOCK chain.  Once we have this we will iterate a process to delete
+# all the rules that have a range between 1 and n, where n equals the
+# number of iptables rules that are not a return rule. Note the sleep
+# statement that is used to prevent iptables from not being able to keep
+# up with deleting chain entries.
     block_chain_num = 0
     for entry in list_block_chain:
         if search('^RETURN', entry):
             pass
         else:
             block_chain_num = block_chain num + 1
-
     del_num = block_chain_num + 1
-    del counter = 0
+    del_counter = 0
     for rule_num in range(1, del_num):
+        del_counter = del_counter + 1
         if del_counter <= 10:
             Popen('/sbin/iptables -D ' + str(del_num) + 'TOR-BLOCK',
                   shell=True)
@@ -57,24 +73,49 @@ def TORChainSetup():
             sleep(1)
 
 
-# VARIABLE DECLARATION
-ip_pattern = '\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}'
-tor_exit_list = []
-block_list = []
+def FetchExitNodes():
+    """Returns a TOR exit node list."""
+# Connecting to TOR's directory servers and looking for all exit relays.
+# If the relay is an exit relay, we are going to store the IP address
+# in a list. After we validate whether or not a each entry is a valid IP
+# address, we will return the valid IPs.
+    tor_exit_list = []
+    for desc in stem.descriptor.remote.get_server_descriptors():
+        if desc.exit_policy.is_exiting_allowed():
+            tor_exit_list.append(desc.address)
+    ip_pattern = '\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}'
+    block_list = []
+    tor_exit_list.sort()
+    for ip_addr in set(tor_exit_list):
+        try:
+            if match(ip_pattern, ip_addr):
+                block_list.append(ip_addr)
+            else:
+                raise ValueError
+        except ValueError:
+            print 'Invalid IP address encountered.  Exiting.'
+            sys.exit(1)
+    return block_list
 
 
-# Connecting to TOR's directory servers and looking for all exit relays.  If
-# the relay is an exit relay, we are going to store the IP address in a list.
+def BlockExitNodes(ExitNodeList):
+    """Calls iptables to block exit nodes."""
+# Setting up iptables to log and block all TOR exit node traffic. The
+# log level is being set to info, so modify your logging/syslog
+# configurations to not log informational events if you don't want to
+# log such traffic to a log collector/SIEM.
+    Popen('/sbin/iptables -I TOR-BLOCK 1 -j LOG --log-level 6', shell=True)
+    block_counter = 0
+    for ip in ExitNodeList:
+        block_counter = block_counter + 1
+        if block_counter <= 10:
+            Popen('/sbin/iptables -I TOR-BLOCK 2 -s ' + ip + ' -j DROP',
+                  shell=True)
+        else:
+            block_counter = 0
+            sleep(1)
 
-for desc in stem.descriptor.remote.get_server_descriptors():
-    if desc.exit_policy.is_exiting_allowed():
-        tor_exit_list.append(desc.address)
 
-# Sort the list to make it neat, and for ease of comparison if that becomes
-# a desired feature later.  After we validate whethor not each entry is an
-# actual IP address, we will block the IP addresses using iptables.
-tor_exit_list.sort()
-
-for ip_addr in set(tor_exit_list):
-    if match(ip_pattern, ip_addr):
-        block_list.append(ip_addr)
+TORChainSetup()
+ExitNodes = FetchExitNodes()
+BlockExitNodes(ExitNodes)
