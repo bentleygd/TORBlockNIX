@@ -4,7 +4,7 @@
 import stem.descriptor.remote
 from re import match, search, split
 from subprocess import check_output, CalledProcessError, STDOUT, Popen
-from sys import exc_info, exit
+from sys import exc_info
 from time import sleep
 
 
@@ -63,10 +63,10 @@ def TORChainSetup():
             block_chain_num = block_chain_num + 1
     del_num = block_chain_num + 1
     del_counter = 0
-    for rule_num in range(1, del_num):
+    for rule_num in range(2, del_num):
         del_counter = del_counter + 1
         if del_counter <= 10:
-            Popen('/sbin/iptables -D ' + str(del_num) + 'TOR-BLOCK',
+            Popen('/sbin/iptables -D ' + str(rule_num) + 'TOR-BLOCK',
                   shell=True)
         else:
             del_counter = 0
@@ -94,7 +94,7 @@ def FetchExitNodes():
                 raise ValueError
         except ValueError:
             print 'Invalid IP address encountered.  Exiting.'
-            sys.exit(1)
+            exit(1)
     return block_list
 
 
