@@ -65,12 +65,7 @@ def TORChainSetup():
     for rule_num in range(2, del_num):
         del_counter = del_counter + 1
         if del_counter <= 10:
-<<<<<<< HEAD
-            Popen('/sbin/iptables -D ' + str(rule_num) + 'TOR-BLOCK',
-                  shell=True)
-=======
             Popen(['/sbin/iptables', '-D', str(del_num), 'TOR-BLOCK'])
->>>>>>> InProgBranch
         else:
             del_counter = 0
             sleep(1)
