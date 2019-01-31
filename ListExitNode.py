@@ -8,7 +8,8 @@ file_path = '/path/to/output.txt'
 ip_pattern = '\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}'
 tor_exit_list = []
 
-# Obtain a list of exit nodes and write them to a file.
+# Obtain a list of exit nodes and write them to a file after verifying
+# that each entry is an IP addres.
 for desc in stem.descriptor.remote.get_server_descriptors():
     if desc.exit_policy.is_exiting_allowed():
         tor_exit_list.append(desc.address)
