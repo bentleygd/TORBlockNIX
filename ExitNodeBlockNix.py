@@ -62,10 +62,10 @@ def TORChainSetup():
             block_chain_num = block_chain_num + 1
     del_num = block_chain_num + 1
     del_counter = 0
-    for rule_num in range(2, del_num):
+    for rule_num in range(1, del_num):
         del_counter = del_counter + 1
         if del_counter <= 10:
-            Popen(['/sbin/iptables', '-D', str(del_num), 'TOR-BLOCK'])
+            Popen(['/sbin/iptables', '-D', str(rule_num), 'TOR-BLOCK'])
         else:
             del_counter = 0
             sleep(1)
