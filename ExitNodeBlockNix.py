@@ -4,7 +4,7 @@
 import stem.descriptor.remote
 from re import match, search, split
 from subprocess import check_output, CalledProcessError, STDOUT, Popen
-from sys import exc_info, exit
+from sys import exc_info
 from time import sleep
 
 
@@ -15,7 +15,7 @@ from time import sleep
 def TORChainSetup():
     """Sets up iptables for blocking TOR exit nodes."""
     try:
-        check_output('/sbin/iptables -N TOR-BLOCK', shell=True, sterr=STDOUT)
+        check_output(['/sbin/iptables', '-N', 'TOR-BLOCK'], sterr=STDOUT)
     except CalledProcessError as CreateChain:
         if match('iptables: Chain already exists\.', CreateChain.output):
             pass
@@ -30,24 +30,23 @@ def TORChainSetup():
             exit(1)
 
 # Obtain a list of iptables rules that are the current TOR-BLOCK chain.
-    list_block_chain = split('\n', check_output('/sbin/iptables -L TOR-BLOCK',
-                             shell=True))
+    list_block_chain = split('\n', check_output(['/sbin/iptables', '-L',
+                             'TOR-BLOCK']))
 
 # Check to see if there is a return rule, and if there isn't create one.
     for entry in list_block_chain:
         if search('^RETURN', entry):
             break
         else:
-            Popen('/sbin/iptables -A -j RETURN', shell=True)
+            Popen(['/sbin/iptables', '-A', '-j', 'RETURN'])
 
 # Set up the INPUT chain to jump to TOR-BLOCK.
-    input_chain = split('\n', check_output('/sbin/iptables -L INPUT',
-                        shell=True))
+    input_chain = split('\n', check_output(['/sbin/iptables', '-L', 'INPUT']))
     for entry in input_chain:
         if search('^TOR-BLOCK', entry):
             break
         else:
-            Popen('/sbin/iptables -I INPUT 1 -j TOR-BLOCK', shell=True)
+            Popen(['/sbin/iptables', '-I', 'INPUT', '1', '-j', 'TOR-BLOCK'])
 
 # Create a count of iptables rules that are not the RETURN rule in the
 # TOR-BLOCK chain.  Once we have this we will iterate a process to delete
@@ -66,8 +65,7 @@ def TORChainSetup():
     for rule_num in range(1, del_num):
         del_counter = del_counter + 1
         if del_counter <= 10:
-            Popen('/sbin/iptables -D ' + str(del_num) + 'TOR-BLOCK',
-                  shell=True)
+            Popen(['/sbin/iptables', '-D', str(del_num), 'TOR-BLOCK'])
         else:
             del_counter = 0
             sleep(1)
@@ -83,12 +81,11 @@ def FetchExitNodes():
     for desc in stem.descriptor.remote.get_server_descriptors():
         if desc.exit_policy.is_exiting_allowed():
             tor_exit_list.append(desc.address)
-    ip_pattern = '\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}'
     block_list = []
     tor_exit_list.sort()
     for ip_addr in set(tor_exit_list):
         try:
-            if match(ip_pattern, ip_addr):
+            if match('\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}', ip_addr):
                 block_list.append(ip_addr)
             else:
                 raise ValueError
@@ -104,13 +101,14 @@ def BlockExitNodes(ExitNodeList):
 # log level is being set to info, so modify your logging/syslog
 # configurations to not log informational events if you don't want to
 # log such traffic to a log collector/SIEM.
-    Popen('/sbin/iptables -I TOR-BLOCK 1 -j LOG --log-level 6', shell=True)
+    Popen(['/sbin/iptables', '-I', 'TOR-BLOCK', '1', '-j', 'LOG',
+           '--log-level', '6'])
     block_counter = 0
     for ip in ExitNodeList:
         block_counter = block_counter + 1
         if block_counter <= 10:
-            Popen('/sbin/iptables -I TOR-BLOCK 2 -s ' + ip + ' -j DROP',
-                  shell=True)
+            Popen(['/sbin/iptables', '-I', 'TOR-BLOCK', '2', '-s ', ip, '-j',
+                   'DROP'])
         else:
             block_counter = 0
             sleep(1)
