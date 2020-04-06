@@ -17,7 +17,7 @@ class TestTORStuff:
     def test_exit_list(self):
         """Tests retrieving a list of exit relays."""
         tor_exit_list = get_exit_relays()
-        assert len(tor_exit_list) > 300
+        assert len(tor_exit_list) > 10
 
 
 class TestUserPrivs:
