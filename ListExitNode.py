@@ -5,17 +5,16 @@ from logging import basicConfig, getLogger, INFO
 
 
 def validate_ip(ip_addr):
-    """Takes a string input and returns true if it is a valid IP."""
+    """Takes a string input and returns true if it is a valid IP.
+
+    Keyword Arguments:
+    ip_addr - a string (ip address) to validate.
+
+    Raies:
+    ValueError - Rasies when input string does not pass validation."""
     valid_ip = r'\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}'
     if match(valid_ip, ip_addr):
-        octets = ip_addr.split('.')
-        if (int(octets[0]) <= 223 and
-                int(octets[1]) <= 255 and
-                int(octets[2]) <= 255 and
-                int(octets[3]) <= 254):
-            return True
-        else:
-            raise ValueError
+        return True
     else:
         raise ValueError
 
@@ -30,7 +29,9 @@ def get_exit_relays():
     tor_exit_list - A list of exit relays.
 
     Raises:
-    TBD."""
+    ValueError - Occurs when IP address does not pass input validation.
+    Exception - Generic exception that occurs when attempting to retrieve a
+    list of exit relays."""
     tor_exit_list = []
     log = getLogger('tor_exit_log')
     try:
@@ -61,13 +62,14 @@ def main():
         exit_node_file = open('tor_list.txt', 'w', encoding='ascii')
     except OSError:
         log.error('Unable to open exit relay results file.', excinfo=1)
-    log.info('Retrieving list of exit relays from the TOR mirrors.')
+    log.debug('Retrieving list of exit relays from the TOR mirrors.')
     exit_relays = get_exit_relays()
+    log.info('%d exit relays retrieved.' % len(exit_relays))
     log.debug('Writing exit relays to file.')
     for relay in set(exit_relays):
         exit_node_file.write(relay + '/32' + '\n')
     exit_node_file.close()
-    log.info('Completed attempt to retrieve exit relays.')
+    log.debug('Completed attempt to retrieve exit relays.')
 
 
 if __name__ == '__main__':

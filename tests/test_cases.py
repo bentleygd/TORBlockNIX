@@ -41,7 +41,7 @@ class TestUserPrivs:
         else:
             test = False
         assert test is True
-    
+
     def test_file_remove(self):
         """Tests file deletion."""
         test_file_name = 'test_file.txt'
@@ -50,3 +50,4 @@ class TestUserPrivs:
             test = True
         else:
             test = False
+        assert test is True
